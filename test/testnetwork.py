@@ -45,7 +45,7 @@ class TestNIC:
 
     def testInitString(self):
         """test nic creation"""
-        nic = NIC("lo")
+        nic = NICFactory("lo")
         assert nic.name == "lo"
 
     def testNICState(self):
@@ -74,22 +74,23 @@ class TestNIC:
     def testNIC(self):
         """test the NIC setters and getters"""
         nic = NICFactory("eth0:1")
+
         assert nic.name == "eth0:1"
         assert nic.state == "down"
-        assert nic.address == []
+        assert nic.addresses == []
 
         nic.state = "up"
         assert nic.state == "up"
 
         addresses = map(NICAddress, legal_addr_v4)
-        nic.address.extend(addresses)
-        assert len(nic.address) == len(legal_addr_v4)
+        nic.addresses.extend(addresses)
+        assert len(nic.addresses) == len(legal_addr_v4)
         assert nic.state == "up"
 
         for naddr in addresses:
-            nic.address.remove(naddr)
+            nic.addresses.remove(naddr)
 
-        assert len(nic.address) == 0
+        assert len(nic.addresses) == 0
         assert nic.state == "up"
 
         nic.state = "down"
@@ -106,16 +107,16 @@ class TestNIC:
     def testNICAddressList(self):
         """test NICAddressList"""
         nic = NIC("eth0:1")
-        assert nic.address == []
+        assert nic.addresses == []
 
         addresses = map(NICAddress, legal_addr_v4)
-        nic.address.extend(addresses)
-        assert len(nic.address) == len(legal_addr_v4)
+        nic.addresses.extend(addresses)
+        assert len(nic.addresses) == len(legal_addr_v4)
 
         for naddr in addresses:
-            nic.address.remove(naddr)
+            nic.addresses.remove(naddr)
 
-        assert len(nic.address) == 0 and nic.address == []
+        assert len(nic.addresses) == 0 and nic.addresses == []
 
 class TestRoute:
     """Unit tests for the Route class"""

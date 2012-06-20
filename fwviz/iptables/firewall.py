@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 """
 @author: maz <witte@netzquadrat.de>
@@ -8,12 +7,11 @@
 # import pprint
 
 from fwviz.firewall import Firewall, FwPlumbing
-from network.network import Network, RoutingTable
+from network.network import Network, RoutingTable, NICFactory
 # from fwviz.fwcommand import IptablesCmd
 
 class IptablesFw(Firewall):
     """An iptables based firewall"""
-
     def __init__(self):
         """Constructor"""
         super(IptablesFw, self).__init__()
@@ -43,16 +41,16 @@ class IptablesNetwork(Network):
 
     def __init__(self):
         super(IptablesNetwork, self).__init__()
-        self.__plumbing = IptablesPlumbing()
-
-        self.__routingtable = RoutingTable()
+        self._plumbing = IptablesPlumbing()
+        self._routingtable = RoutingTable()
         for event in "ifState", "addrState":
-            self.register(self.__routingtable, event)
+            self.register(self._routingtable, event)
 
-    def addNIC(self, nic):
+    def addNIC(self, nicname):
         """add a nic"""
         try:
-            self.__nics.append(nic)
+            nic = NICFactory(nicname)
+            self._nics.append(nic)
         except:
             raise
         for event in "ifState", "addrState":
@@ -61,19 +59,20 @@ class IptablesNetwork(Network):
     def getNIC(self, nic):
         """search for nics"""
         if isinstance(nic, str):
-            return filter(lambda x: nic == x.name, self.__nics)
+            found, = filter(lambda x: nic == x.name, self._nics)
         elif isinstance(nic, object):
-            return filter(lambda x: nic == x, self.__nics)
+            found, = filter(lambda x: nic == x, self._nics)
         else:
-            raise
+            raise NameError
+        return found
 
     def delNIC(self, nic):
         """remove a nic"""
         if isinstance(nic, str):
             delnic = self.getNIC(nic)
-            self.__nics.remove(delnic)
+            self._nics.remove(delnic)
         elif isinstance(nic, object):
-            self.__nics.remove(nic)
+            self._nics.remove(nic)
         else:
             raise
         for event in "ifState", "addrState":

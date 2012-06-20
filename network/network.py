@@ -33,9 +33,14 @@ class Network(FwMediator):
     def __init__(self):
         """Constructor"""
         super(Network, self).__init__()
-        self.__routingtable = None
-        self.__nics = None
-        self.__plumbing = None
+        self._routingtable = None
+        self._nics = []
+        self._plumbing = None
+
+    @property
+    def nics(self):
+        """getter"""
+        return self._nics
 
     def addNIC(self, name):
         """add a network interface"""
@@ -51,26 +56,32 @@ class NIC(FwColleague):
         """Constructor"""
         super(NIC, self).__init__(kwargs)
         self.name = name
-        self.__state = "down"
-        self.__address = NICAddressList()
+        self._state = "down"
+        self._addresses = NICAddressList()
+
+    def __repr__(self):
+        return """NIC: {self.name} 
+    State: {self._state}
+    Adresses: {self._addresses}
+""".format(self=self)
 
     @property
     def state(self):
         """state getter"""
-        return self.__state
+        return self._state
 
     @state.setter
     def state(self, value):
         """state setter"""
         if value not in ["up", "down"]:
             raise ValueError("""state is either "up" or "down"!""")
-        self.__state = value
+        self._state = value
         self.report("ifState")
 
     @property
-    def address(self):
+    def addresses(self):
         """address getter"""
-        return self.__address
+        return self._addresses
 
 class NICFactory(object):
     """NIC factory class"""
@@ -86,6 +97,24 @@ class NICAddressList(list, FwColleague):
         list.__init__(self, [])
         FwColleague.__init__(self, mediator=mediator)
 
+    def __repr__(self):
+        return "\n".join(self)
+
+    # 
+
+    def __setitem__(self, key, addr):
+        na = setAddr(addr)
+        super(NICAddressList, self).__setitem__(key, na)
+
+    def append(self,):
+
+    def extend(self,):
+
+    def remove(self,):
+
+    def insert(self,):
+
+
     def onEvent(self, event, *args, **kwargs):
         """I only report"""
         pass
@@ -96,9 +125,9 @@ class NICAddress(object):
         # super(NICAddress, self).__init__(address, network)
         self.__address, self.__netmask = setAddr(address)
 
-    def __str__(self):
+    def __repr__(self):
         """String representation"""
-        return "{0}/{1}".format(self.__address, self.__netmask)
+        return "-- {0}/{1}".format(self.__address, self.__netmask)
 
     @property
     def address(self):
