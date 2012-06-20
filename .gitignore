@@ -28,3 +28,7 @@ pip-log.txt
 .mr.developer.cfg
 
 nogit
+.project
+.pydb-settings
+.pydevproject
+.settings
