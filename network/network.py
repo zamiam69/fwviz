@@ -11,20 +11,24 @@ import pprint
 
 def setAddr(addr):
     """enable setting of an address"""
-    if isinstance(addr, str):
-        try:
-            addr = IPy.IP(addr)
-        except ValueError as ve:
-            x = addr.find('/')
-            if x > 1:
-                try:
-                    net = IPy.IP(addr, make_net=True)
-                except:
-                    raise ve
-                else:
-                    addr = IPy.IP(addr[0:x] + "/32")
-        else:
-            net = addr
+    if isinstance(addr, NICAddress):
+        return addr
+
+    # 
+    try:
+        addr = IPy.IP(addr)
+    except ValueError as ve:
+        x = addr.find('/')
+        if x > 1:
+            try:
+                net = IPy.IP(addr, make_net=True)
+            except:
+                raise ve
+            else:
+                addr = IPy.IP(addr[0:x] + "/32")
+    else:
+        net = addr
+
     return addr, net.netmask()
 
 class Network(FwMediator):
@@ -42,13 +46,15 @@ class Network(FwMediator):
         """getter"""
         return self._nics
 
+    @property
+    def routes(self):
+        """getter for the routingtable"""
+        return self._routingtable.routes
+
     def addNIC(self, name):
         """add a network interface"""
         raise NotImplementedError("Should have implemented this")
 
-    def update(self, subject):
-        """Called by observer subjects"""
-        raise NotImplementedError("Should have implemented this")
 
 class NIC(FwColleague):
     """Implements a network interface"""
@@ -100,24 +106,39 @@ class NICAddressList(list, FwColleague):
     def __repr__(self):
         return "\n".join(self)
 
-    # 
-
-    def __setitem__(self, key, addr):
+    # override destructive methods
+    def __setitem__(self, index, addr):
         na = setAddr(addr)
-        super(NICAddressList, self).__setitem__(key, na)
+        super(NICAddressList, self).__setitem__(index, na)
 
-    def append(self,):
+    def __iadd__(self, addrs):
+        nas = []
+        for addr in addrs:
+            nas.append(setAddr(addr))
+        super(NICAddressList, self).__iadd__(nas)
 
-    def extend(self,):
+    def append(self, addr):
+        na = setAddr(addr)
+        super(NICAddressList, self).append(na)
 
-    def remove(self,):
+    def extend(self, addrs):
+        nas = []
+        for addr in addrs:
+            nas.append(setAddr(addr))
+        super(NICAddressList, self).extend(nas)
 
-    def insert(self,):
+    def remove(self, addr):
+        na = setAddr(addr)
+        super(NICAddressList, self).remove(na)
+
+    def insert(self, index, addr):
+        na = setAddr(addr)
+        super(NICAddressList, self).insert(index, na)
 
 
     def onEvent(self, event, *args, **kwargs):
         """I only report"""
-        pass
+        print "Event received."
 
 class NICAddress(object):
     """IP address object"""
@@ -127,7 +148,7 @@ class NICAddress(object):
 
     def __repr__(self):
         """String representation"""
-        return "-- {0}/{1}".format(self.__address, self.__netmask)
+        return "{0}/{1}".format(self.__address, self.__netmask)
 
     @property
     def address(self):
@@ -181,6 +202,11 @@ class RoutingTable(FwColleague):
         super(RoutingTable, self).__init__(kwargs)
         self._routes = []
 
+    @property
+    def routes(self):
+        """getter"""
+        return self._routes
+
     def add(self, route):
         """Add a route to the routing table"""
         self._routes.append(route)
@@ -198,5 +224,5 @@ class RoutingTable(FwColleague):
 
     def onEvent(self, event, *args, **kwargs):
         """Receive events"""
-        print event
+        print "..................", event
         # pass

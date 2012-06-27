@@ -78,10 +78,6 @@ class IptablesNetwork(Network):
         for event in "ifState", "addrState":
             self.unregister(nic, event)
 
-    def update(self, modifier):
-        """observe subjects"""
-
-
 class IptablesPlumbing(FwPlumbing):
     """Simple simulation of iptables/netfilter"""
 
