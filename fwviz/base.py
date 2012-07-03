@@ -27,10 +27,13 @@ class FwMediator(object):
 
     def notify(self, reporter, event, *args, **kwargs):
         """notify reporters/colleagues of a change"""
-        for c in self._colleagues[event]:
-            if c == reporter:
-                continue
-            c.onEvent(event, args, kwargs)
+        try:
+            for c in self._colleagues[event]:
+                if c == reporter:
+                    continue
+                c.onEvent(event, args, kwargs)
+        except KeyError:
+            raise NotImplementedError("Unknown event '{0}'.".format(event))
 
 class FwColleague(object):
     """Abstract reporter class"""
@@ -64,40 +67,59 @@ class FwColleague(object):
 class FwMediatedList(MutableSequence, FwColleague):
     """A list that reports changes to a mediator"""
 
-    def __init__(self, mapping, mediator, eventprefix="list"):
+    def __init__(self, mediator, data=None, eventprefix="list"):
         """Constructor"""
-        self._eventprefix = eventprefix
         FwColleague.__init__(self, mediator)
-        super(MutableSequence, self).__init__(mapping)
+        self._eventprefix = eventprefix
+        self._data = []
+        if data is not None:
+            if type(data) == type(self._data):
+                # shallow copy!
+                self._data[:] = data
+            elif isinstance(data, FwMediatedList):
+                self._data[:] = data.data[:]
+            else:
+                self._data[:] = list(data)
+            self.report(self._eventprefix + "Add", data)
+
+    def __repr__(self):
+        return repr(self._data)
+
+    def __getitem__(self, index):
+        return self._data[index]
+
+    def __len__(self):
+        return len(self._data)
 
     def __setitem__(self, index, value):
-        super(FwMediatedList, self).__setitem__(index, value)
+        self._data[index] = value
         self.report(self._eventprefix + "Change", index, value)
 
     def __delitem__(self, index):
-        super(FwMediatedList, self).__setitem__(index)
+        del(self._data[index])
         self.report(self._eventprefix + "Del", index)
 
     def __iadd__(self, values):
-        super(FwMediatedList, self).__iadd__(values)
+        self._data.__iadd__(values)
         self.report(self._eventprefix + "Add", values)
 
     def append(self, value):
-        super(FwMediatedList, self).append(value)
+        self._data.append(value)
         self.report(self._eventprefix + "Add", value)
 
     def extend(self, values):
-        super(FwMediatedList, self).extend(values)
+        self._data.extend(values)
         self.report(self._eventprefix + "Add", values)
 
     def remove(self, value):
-        super(FwMediatedList, self).remove(value)
+        self._data.remove(value)
         self.report(self._eventprefix + "Del", value)
 
     def insert(self, index, value):
-        super(FwMediatedList, self).insert(index, value)
+        self._data.insert(index, value)
         self.report(self._eventprefix + "Add", index, value)
 
     def pop(self, index= -1):
-        super(FwMediatedList, self).pop(index)
+        self._data.pop(index)
         self.report(self._eventprefix + "Del", index)
+

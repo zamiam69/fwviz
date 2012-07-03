@@ -6,7 +6,7 @@ Created on Apr 11, 2012
 """
 
 import IPy
-from fwviz.base import FwColleague, FwMediator
+from fwviz.base import FwColleague, FwMediator, FwMediatedList
 import pprint
 
 def setAddr(addr):
@@ -95,13 +95,12 @@ class NICFactory(object):
     def __new__(cls, name, **kwargs):
         return NIC(name, **kwargs)
 
-class NICAddressList(list, FwColleague):
+class NICAddressList(FwMediatedList):
     """A list of NICAddresses"""
 
-    def __init__(self, mediator=None):
+    def __init__(self, mediator=None, data=None):
         """Constructor"""
-        list.__init__(self, [])
-        FwColleague.__init__(self, mediator=mediator)
+        super(NICAddressList, self).__init__(mediator, data)
 
     def __repr__(self):
         return "\n".join(self)
@@ -195,30 +194,24 @@ class Route(object):
         return "{0} {1} {2} {3}".format(
             self.network, self.gateway, self.nic, self.metric)
 
-class RoutingTable(FwColleague):
+class RoutingTable(FwMediatedList):
     """Implements a simple routing table"""
 
-    def __init__(self, **kwargs):
-        super(RoutingTable, self).__init__(kwargs)
-        self._routes = []
+    def __init__(self, *args, **kwargs):
+        super(RoutingTable, self).__init__(args, kwargs)
+
+    def __setitem__(self, index, value):
+        super(RoutingTable, self).__setitem__(index, value)
+        self._data.sort()
 
     @property
     def routes(self):
         """getter"""
-        return self._routes
-
-    def add(self, route):
-        """Add a route to the routing table"""
-        self._routes.append(route)
-        self._routes.sort()
-
-    def delete(self, route):
-        """Delete a route from the routing table"""
-        self._routes.remove(route)
+        return self._data
 
     def lookup(self, address):
         """Lookup the route for a given address"""
-        for r in self._routes:
+        for r in self._data:
             if address in r.network:
                 return r
 
