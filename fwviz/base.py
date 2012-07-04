@@ -83,7 +83,7 @@ class FwMediatedList(MutableSequence, FwColleague):
             self.report(self._eventprefix + "Add", data)
 
     def __repr__(self):
-        return repr(self._data)
+        return self._data
 
     def __getitem__(self, index):
         return self._data[index]
@@ -98,6 +98,7 @@ class FwMediatedList(MutableSequence, FwColleague):
     def __delitem__(self, index):
         del(self._data[index])
         self.report(self._eventprefix + "Del", index)
+
 
     def __iadd__(self, values):
         self._data.__iadd__(values)
@@ -120,6 +121,6 @@ class FwMediatedList(MutableSequence, FwColleague):
         self.report(self._eventprefix + "Add", index, value)
 
     def pop(self, index= -1):
-        self._data.pop(index)
+        x = self._data.pop(index)
         self.report(self._eventprefix + "Del", index)
-
+        return x

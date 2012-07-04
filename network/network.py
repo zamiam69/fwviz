@@ -63,7 +63,7 @@ class NIC(FwColleague):
         super(NIC, self).__init__(kwargs)
         self.name = name
         self._state = "down"
-        self._addresses = NICAddressList()
+        self._addresses = NICAddressList(data=[])
 
     def __repr__(self):
         return """NIC: {self.name} 
@@ -98,12 +98,12 @@ class NICFactory(object):
 class NICAddressList(FwMediatedList):
     """A list of NICAddresses"""
 
-    def __init__(self, mediator=None, data=None):
+    def __init__(self, mediator=None, data=None, eventprefix="address"):
         """Constructor"""
-        super(NICAddressList, self).__init__(mediator, data)
+        super(NICAddressList, self).__init__(mediator, data, eventprefix)
 
-    def __repr__(self):
-        return "\n".join(self)
+    def __str__(self):
+        return "\n".join(str(na) for na in self._data)
 
     # override destructive methods
     def __setitem__(self, index, addr):
@@ -133,7 +133,6 @@ class NICAddressList(FwMediatedList):
     def insert(self, index, addr):
         na = setAddr(addr)
         super(NICAddressList, self).insert(index, na)
-
 
     def onEvent(self, event, *args, **kwargs):
         """I only report"""
@@ -202,6 +201,22 @@ class RoutingTable(FwMediatedList):
 
     def __setitem__(self, index, value):
         super(RoutingTable, self).__setitem__(index, value)
+        self._data.sort()
+
+    def __iadd__(self, values):
+        super(RoutingTable, self).__iadd__(values)
+        self._data.sort()
+
+    def append(self, value):
+        super(RoutingTable, self).append(value)
+        self._data.sort()
+
+    def extend(self, values):
+        super(RoutingTable, self).extend(values)
+        self._data.sort()
+
+    def insert(self, index, value):
+        super(RoutingTable, self).insert(index, value)
         self._data.sort()
 
     @property
