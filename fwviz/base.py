@@ -70,8 +70,8 @@ class FwMediatedList(MutableSequence, FwColleague):
     def __init__(self, mediator, data=None, eventprefix="list"):
         """Constructor"""
         FwColleague.__init__(self, mediator)
-        self._eventprefix = eventprefix
         self._data = []
+        self._eventprefix = eventprefix
         if data is not None:
             if type(data) == type(self._data):
                 # shallow copy!
@@ -82,8 +82,22 @@ class FwMediatedList(MutableSequence, FwColleague):
                 self._data[:] = list(data)
             self.report(self._eventprefix + "Add", data)
 
+    @property
+    def data(self):
+        "getter"
+        return self._data
+
+    def __str__(self):
+        return str(self._data)
+
     def __repr__(self):
         return self._data
+
+    def __eq__(self, other):
+        if isinstance(other, FwMediatedList):
+            return self._data == other.data
+        else:
+            return self._data == other
 
     def __getitem__(self, index):
         return self._data[index]
@@ -98,7 +112,6 @@ class FwMediatedList(MutableSequence, FwColleague):
     def __delitem__(self, index):
         del(self._data[index])
         self.report(self._eventprefix + "Del", index)
-
 
     def __iadd__(self, values):
         self._data.__iadd__(values)

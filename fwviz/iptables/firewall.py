@@ -7,7 +7,7 @@
 # import pprint
 
 from fwviz.firewall import Firewall, FwPlumbing
-from network.network import Network, RoutingTable, NICFactory
+from network.network import Network, RoutingTable, NICFactory, NIC
 # from fwviz.fwcommand import IptablesCmd
 
 class IptablesFw(Firewall):
@@ -39,28 +39,35 @@ class IptablesFw(Firewall):
 class IptablesNetwork(Network):
     """Network for an iptables firewall"""
 
+    __events = {
+               "nic": ["addressChange", "addressDel", "addressAdd" ],
+               "routingtable": ["ifState",
+                                "addressChange", "addressDel", "addressAdd" ]
+    }
+
     def __init__(self):
         super(IptablesNetwork, self).__init__()
         self._plumbing = IptablesPlumbing()
-        self._routingtable = RoutingTable()
-        for event in "ifState", "addrState":
+        self._routingtable = RoutingTable(monitor=self)
+        for event in self.__events['routingtable']:
             self.register(self._routingtable, event)
 
     def addNIC(self, nicname):
         """add a nic"""
         try:
-            nic = NICFactory(nicname)
+            nic = NICFactory(nicname, mediator=self)
             self._nics.append(nic)
         except:
             raise
-        for event in "ifState", "addrState":
-            self.register(nic, event)
+
+        #for event in self.__events['nic']:
+        #    self.register(nic, event)
 
     def getNIC(self, nic):
         """search for nics"""
         if isinstance(nic, str):
             found, = filter(lambda x: nic == x.name, self._nics)
-        elif isinstance(nic, object):
+        elif isinstance(nic, NIC):
             found, = filter(lambda x: nic == x, self._nics)
         else:
             raise NameError
@@ -71,12 +78,14 @@ class IptablesNetwork(Network):
         if isinstance(nic, str):
             delnic = self.getNIC(nic)
             self._nics.remove(delnic)
-        elif isinstance(nic, object):
+        elif isinstance(nic, NIC):
             self._nics.remove(nic)
         else:
             raise
-        for event in "ifState", "addrState":
-            self.unregister(nic, event)
+        #for event in self.__events['nic']:
+        #    self.unregister(nic, event)
+
+
 
 class IptablesPlumbing(FwPlumbing):
     """Simple simulation of iptables/netfilter"""

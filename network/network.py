@@ -7,7 +7,8 @@ Created on Apr 11, 2012
 
 import IPy
 from fwviz.base import FwColleague, FwMediator, FwMediatedList
-import pprint
+from abc import abstractmethod
+# import pprint
 
 def setAddr(addr):
     """enable setting of an address"""
@@ -51,10 +52,20 @@ class Network(FwMediator):
         """getter for the routingtable"""
         return self._routingtable.routes
 
+    @abstractmethod
     def addNIC(self, name):
         """add a network interface"""
         raise NotImplementedError("Should have implemented this")
 
+    @abstractmethod
+    def getNIC(self, nic):
+        """find a nic"""
+        pass
+
+    @abstractmethod
+    def delNIC(self, nic):
+        """delete a nic"""
+        pass
 
 class NIC(FwColleague):
     """Implements a network interface"""
@@ -63,7 +74,10 @@ class NIC(FwColleague):
         super(NIC, self).__init__(kwargs)
         self.name = name
         self._state = "down"
-        self._addresses = NICAddressList(data=[])
+        if "mediator" in kwargs.keys():
+            self._addresses = NICAddressList(kwargs["mediator"])
+        else:
+            self._addresses = NICAddressList()
 
     def __repr__(self):
         return """NIC: {self.name} 
@@ -88,6 +102,9 @@ class NIC(FwColleague):
     def addresses(self):
         """address getter"""
         return self._addresses
+
+    def onEvent(self, event, *args, **kwargs):
+        print event
 
 class NICFactory(object):
     """NIC factory class"""
@@ -232,5 +249,11 @@ class RoutingTable(FwMediatedList):
 
     def onEvent(self, event, *args, **kwargs):
         """Receive events"""
-        print "..................", event
-        # pass
+        if event == "addressAdd":
+            print event, ": ", args
+        elif event == "addressChange":
+            print args
+        elif event == "addressDel":
+            print args
+        else:
+            print event, "unhandled"

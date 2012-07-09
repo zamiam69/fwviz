@@ -33,7 +33,10 @@ class testIptablesNetwork:
         for n in nics:
             assert n == N.getNIC(n).name
 
-        N.getNIC("lo").addresses.append("127.0.0.1/8")
+        lo = N.getNIC("lo")
+        lo.addresses.append("127.0.0.1/8")
         addresses = "192.168.11.12/23", "10.11.12.13/9", "66.66.66.66/32"
-        N.getNIC("dummy0").addresses.extend(addresses)
-        al = N.getNIC("dummy0").addresses
+        dummy0 = N.getNIC("dummy0")
+        dummy0.addresses.extend(addresses)
+        al = dummy0.addresses
+

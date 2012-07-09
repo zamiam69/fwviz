@@ -77,8 +77,7 @@ class TestNIC:
 
         assert nic.name == "eth0:1"
         assert nic.state == "down"
-        pprint.pprint(nic.addresses)
-        print "<", nic.addresses, ">"
+        # pprint.pprint(nic.addresses)
         assert nic.addresses == []
 
         nic.state = "up"
@@ -110,7 +109,7 @@ class TestNIC:
         """test NICAddressList"""
         nic = NIC("eth0:1")
         print nic.addresses
-        #assert nic.addresses == []
+        assert nic.addresses == []
 
         addresses = map(NICAddress, legal_addr_v4)
         nic.addresses.extend(addresses)
@@ -119,7 +118,7 @@ class TestNIC:
         for naddr in addresses:
             nic.addresses.remove(naddr)
 
-        #assert len(nic.addresses) == 0 and nic.addresses == []
+        assert len(nic.addresses) == 0 and nic.addresses == []
 
 class TestRoute:
     """Unit tests for the Route class"""
