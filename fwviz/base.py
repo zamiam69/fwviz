@@ -6,6 +6,34 @@ Created on May 30, 2012
 
 from collections import MutableSequence
 
+class FwEvent(object):
+    """Event class, passed between colleagues"""
+    def __init__(self, reporter, action, **kwargs):
+        self.__reporter = reporter
+        self.__action = action
+        self.__args = args
+        self.__kwargs = kwargs
+
+    @property
+    def reporter(self):
+        return self.__reporter
+
+    @property
+    def eventgroup(self):
+        return self.__reporter.eventgroup
+
+    @property
+    def action(self):
+        return self.__action
+
+    @property
+    def args(self):
+        return self.__args
+
+    @property
+    def kwargs(self):
+        return self.__kwargs
+
 class FwMediator(object):
     """Abstract mediator class"""
 
@@ -25,13 +53,13 @@ class FwMediator(object):
         """unregister a reporter/colleague"""
         self._colleagues[event].remove(colleague)
 
-    def notify(self, reporter, event, *args, **kwargs):
+    def notify(self, event):
         """notify reporters/colleagues of a change"""
         try:
             for c in self._colleagues[event]:
-                if c == reporter:
+                if c == event.reporter:
                     continue
-                c.onEvent(event, args, kwargs)
+                c.onEvent(event)
         except KeyError:
             raise NotImplementedError("Unknown event '{0}'.".format(event))
 
@@ -52,12 +80,12 @@ class FwColleague(object):
         """setter method"""
         self.__mediator = mediator
 
-    def report(self, event, *args, **kwargs):
+    def report(self, event):
         """Report an event to the mediator"""
         if self.mediator:
-            self.__mediator.notify(self, event, args, kwargs)
+            self.__mediator.notify(self, event)
 
-    def onEvent(self, event, *args, **kwargs):
+    def onEvent(self, event):
         """Called by the Mediator"""
         if self.__mediator:
             raise NotImplementedError("Should have implemented this")
@@ -67,11 +95,11 @@ class FwColleague(object):
 class FwMediatedList(MutableSequence, FwColleague):
     """A list that reports changes to a mediator"""
 
-    def __init__(self, mediator, data=None, eventprefix="list"):
+    def __init__(self, mediator, data=None, eventgroup="list"):
         """Constructor"""
         FwColleague.__init__(self, mediator)
         self._data = []
-        self._eventprefix = eventprefix
+        self._eventgroup = eventgroup
         if data is not None:
             if type(data) == type(self._data):
                 # shallow copy!
@@ -80,7 +108,7 @@ class FwMediatedList(MutableSequence, FwColleague):
                 self._data[:] = data.data[:]
             else:
                 self._data[:] = list(data)
-            self.report(self._eventprefix + "Add", data)
+            self.report(self._eventgroup + "Add", data)
 
     @property
     def data(self):
@@ -107,33 +135,33 @@ class FwMediatedList(MutableSequence, FwColleague):
 
     def __setitem__(self, index, value):
         self._data[index] = value
-        self.report(self._eventprefix + "Change", index, value)
+        self.report(self._eventgroup + "Change", index, value)
 
     def __delitem__(self, index):
         del(self._data[index])
-        self.report(self._eventprefix + "Del", index)
+        self.report(self._eventgroup + "Del", index)
 
     def __iadd__(self, values):
         self._data.__iadd__(values)
-        self.report(self._eventprefix + "Add", values)
+        self.report(self._eventgroup + "Add", values)
 
     def append(self, value):
         self._data.append(value)
-        self.report(self._eventprefix + "Add", value)
+        self.report(self._eventgroup + "Add", value)
 
     def extend(self, values):
         self._data.extend(values)
-        self.report(self._eventprefix + "Add", values)
+        self.report(self._eventgroup + "Add", values)
 
     def remove(self, value):
         self._data.remove(value)
-        self.report(self._eventprefix + "Del", value)
+        self.report(self._eventgroup + "Del", value)
 
     def insert(self, index, value):
         self._data.insert(index, value)
-        self.report(self._eventprefix + "Add", index, value)
+        self.report(self._eventgroup + "Add", index, value)
 
     def pop(self, index= -1):
         x = self._data.pop(index)
-        self.report(self._eventprefix + "Del", index)
+        self.report(self._eventgroup + "Del", index)
         return x

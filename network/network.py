@@ -15,7 +15,7 @@ def setAddr(addr):
     if isinstance(addr, NICAddress):
         return addr
 
-    # 
+    #
     try:
         addr = IPy.IP(addr)
     except ValueError as ve:
@@ -75,12 +75,12 @@ class NIC(FwColleague):
         self.name = name
         self._state = "down"
         if "mediator" in kwargs.keys():
-            self._addresses = NICAddressList(kwargs["mediator"])
+            self._addresses = NICAddressList(kwargs["mediator"], nic=self)
         else:
-            self._addresses = NICAddressList()
+            self._addresses = NICAddressList(nic=self)
 
     def __repr__(self):
-        return """NIC: {self.name} 
+        return """NIC: {self.name}
     State: {self._state}
     Adresses: {self._addresses}
 """.format(self=self)
@@ -115,9 +115,10 @@ class NICFactory(object):
 class NICAddressList(FwMediatedList):
     """A list of NICAddresses"""
 
-    def __init__(self, mediator=None, data=None, eventprefix="address"):
+    def __init__(self, mediator=None, data=None, eventgroup="address",
+                 nic=None):
         """Constructor"""
-        super(NICAddressList, self).__init__(mediator, data, eventprefix)
+        super(NICAddressList, self).__init__(mediator, data, eventgroup)
 
     def __str__(self):
         return "\n".join(str(na) for na in self._data)
