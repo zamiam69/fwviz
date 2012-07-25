@@ -11,7 +11,6 @@ class FwEvent(object):
     def __init__(self, reporter, action, **kwargs):
         self.__reporter = reporter
         self.__action = action
-        self.__args = args
         self.__kwargs = kwargs
 
     @property
@@ -27,12 +26,13 @@ class FwEvent(object):
         return self.__action
 
     @property
-    def args(self):
-        return self.__args
-
-    @property
     def kwargs(self):
         return self.__kwargs
+    
+class FwEventFactory(object):
+    """Factory for an FwEvent"""
+    def __new__(cls, reporter, action, **kwargs):
+        return FwEvent(reporter, action, **kwargs)
 
 class FwMediator(object):
     """Abstract mediator class"""
@@ -65,10 +65,11 @@ class FwMediator(object):
 
 class FwColleague(object):
     """Abstract reporter class"""
-    def __init__(self, mediator=None):
+    def __init__(self, mediator=None, eventgroup="colleague"):
         """Constructor"""
         super(FwColleague, self).__init__()
         self.__mediator = mediator
+        self.__eventgroup = eventgroup
 
     @property
     def mediator(self):
@@ -79,11 +80,16 @@ class FwColleague(object):
     def mediator(self, mediator):
         """setter method"""
         self.__mediator = mediator
+        
+    @property
+    def eventgroup(self):
+        """getter"""
+        return self.__eventgroup
 
     def report(self, event):
         """Report an event to the mediator"""
         if self.mediator:
-            self.__mediator.notify(self, event)
+            self.__mediator.notify(event)
 
     def onEvent(self, event):
         """Called by the Mediator"""
@@ -95,11 +101,10 @@ class FwColleague(object):
 class FwMediatedList(MutableSequence, FwColleague):
     """A list that reports changes to a mediator"""
 
-    def __init__(self, mediator, data=None, eventgroup="list"):
+    def __init__(self, mediator, eventgroup="list", data=None):
         """Constructor"""
-        FwColleague.__init__(self, mediator)
+        FwColleague.__init__(self, mediator, eventgroup)
         self._data = []
-        self._eventgroup = eventgroup
         if data is not None:
             if type(data) == type(self._data):
                 # shallow copy!
@@ -108,7 +113,8 @@ class FwMediatedList(MutableSequence, FwColleague):
                 self._data[:] = data.data[:]
             else:
                 self._data[:] = list(data)
-            self.report(self._eventgroup + "Add", data)
+            event = FwEventFactory(self, "Add", data=self.data)
+            self.report(event)
 
     @property
     def data(self):
@@ -135,33 +141,42 @@ class FwMediatedList(MutableSequence, FwColleague):
 
     def __setitem__(self, index, value):
         self._data[index] = value
-        self.report(self._eventgroup + "Change", index, value)
+        event = FwEventFactory(self, "Change", data=self.data)
+        self.report(self._eventgroup + "Change", index=index, value=value)
+        self.report(event)
 
     def __delitem__(self, index):
         del(self._data[index])
-        self.report(self._eventgroup + "Del", index)
+        event = FwEventFactory(self, "Del", index=index)
+        self.report(event)
 
     def __iadd__(self, values):
         self._data.__iadd__(values)
-        self.report(self._eventgroup + "Add", values)
+        event = FwEventFactory(self, "Add", values=values)
+        self.report(event)
 
     def append(self, value):
         self._data.append(value)
-        self.report(self._eventgroup + "Add", value)
+        event = FwEventFactory(self, "Add", values=values)
+        self.report(event)
 
     def extend(self, values):
         self._data.extend(values)
-        self.report(self._eventgroup + "Add", values)
+        event = FwEventFactory(self, "Add", values=values)
+        self.report(event)
 
     def remove(self, value):
         self._data.remove(value)
-        self.report(self._eventgroup + "Del", value)
+        event = FwEventFactory(self, "Del", value=value)
+        self.report(event)
 
     def insert(self, index, value):
         self._data.insert(index, value)
-        self.report(self._eventgroup + "Add", index, value)
+        event = FwEventFactory(self, "Add", index=index, value=value)
+        self.report(event)
 
     def pop(self, index= -1):
         x = self._data.pop(index)
-        self.report(self._eventgroup + "Del", index)
+        event = FwEventFactory(self, "Del", index=index)
+        self.report(event)
         return x

@@ -115,10 +115,15 @@ class NICFactory(object):
 class NICAddressList(FwMediatedList):
     """A list of NICAddresses"""
 
-    def __init__(self, mediator=None, data=None, eventgroup="address",
+    def __init__(self, mediator=None, eventgroup="address", data=None, \
                  nic=None):
         """Constructor"""
-        super(NICAddressList, self).__init__(mediator, data, eventgroup)
+        super(NICAddressList, self).__init__(mediator, eventgroup, data)
+        self.__nic=nic
+        
+    @property
+    def nic(self):
+        return self.__nic
 
     def __str__(self):
         return "\n".join(str(na) for na in self._data)
