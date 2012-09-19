@@ -12,7 +12,10 @@ class FwEvent(object):
         self.__reporter = reporter
         self.__action = action
         self.__kwargs = kwargs
-
+        
+    def __str__(self):
+        return self.__reporter.eventgroup + self.__action
+        
     @property
     def reporter(self):
         return self.__reporter
@@ -36,27 +39,33 @@ class FwEventFactory(object):
 
 class FwMediator(object):
     """Abstract mediator class"""
-
     def __init__(self):
         """Constructor"""
         super(FwMediator, self).__init__()
         self._colleagues = {}
 
-    def register(self, colleague, event):
+    def register(self, colleague, eventgroup, *actions):
         """register a reporter/colleague"""
-        if event and event not in self._colleagues.keys():
-            self._colleagues[event] = []
-        if event:
-            self._colleagues[event].append(colleague)
-
-    def unregister(self, colleague, event):
+        if eventgroup not in self._colleagues:
+            self._colleagues[eventgroup] = {}
+            
+        for a in actions:
+            if a not in self._colleagues[eventgroup]:
+                self._colleagues[eventgroup][a] = []
+            self._colleagues[eventgroup][a].append(colleague)
+        
+    def unregister(self, colleague, eventgroup, *actions):
         """unregister a reporter/colleague"""
-        self._colleagues[event].remove(colleague)
+        if eventgroup not in self._colleagues:
+            return
+        
+        for a in actions:
+            self._colleagues[eventgroup][a].remove(colleague)
 
     def notify(self, event):
         """notify reporters/colleagues of a change"""
         try:
-            for c in self._colleagues[event]:
+            for c in self._colleagues[event.eventgroup][event.action]:
                 if c == event.reporter:
                     continue
                 c.onEvent(event)
@@ -157,7 +166,7 @@ class FwMediatedList(MutableSequence, FwColleague):
 
     def append(self, value):
         self._data.append(value)
-        event = FwEventFactory(self, "Add", values=values)
+        event = FwEventFactory(self, "Add", value=value)
         self.report(event)
 
     def extend(self, values):

@@ -5,7 +5,7 @@ Created on Jun 19, 2012
 
 Unit test for fwviz.base"""
 
-from fwviz.base import FwColleague, FwMediator, FwMediatedList
+from fwviz.base import FwColleague, FwMediator, FwMediatedList, FwEventFactory
 
 class TColleague(FwColleague):
 
@@ -24,23 +24,24 @@ class TestMediator:
 
     def testMediator(self):
         M = FwMediator()
-        C1 = TColleague(M)
-        C2 = TColleague(M)
+        C1 = TColleague(M, "my")
+        C2 = TColleague(M, "my")
 
-        M.register(C1, "myEvent")
-        M.register(C2, "myEvent")
+        M.register(C1, "my", "Event")
+        M.register(C2, "my", "Event")
 
-        C1.report("myEvent")
+        E = FwEventFactory(C1, )
+        C1.report("my", "Event")
         assert C2.myevent == 1
         assert C1.myevent == 0
 
         # C1.report("unregisteredEvent")
-        C2.report("myEvent")
+        C2.report("my", "Event")
         assert C2.myevent == 1
         assert C1.myevent == 1
 
-        M.unregister(C2, "myEvent")
-        C1.report("myEvent")
+        M.unregister(C2, "my", "Event")
+        C1.report("my", "Event")
         assert C2.myevent == 1
         assert C1.myevent == 1
 
@@ -49,9 +50,7 @@ class TestMediatedList:
     def testMediatedList(self):
         M = FwMediator()
         C = TColleague(M)
-        M.register(C, "tlistChange")
-        M.register(C, "tlistAdd")
-        M.register(C, "tlistDel")
+        M.register(C, "tlist", "Change", "Add", "Del")
 
         initlist = ["foo", "bar"]
 
