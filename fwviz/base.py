@@ -7,8 +7,14 @@ Created on May 30, 2012
 from collections import MutableSequence
 
 class FwEvent(object):
-    """Event class, passed between colleagues"""
+    """Event class, passed between colleagues via their common
+    mediator.
+    
+    To avoid notifying the event's sender it needs to know who
+    reported it.
+    """
     def __init__(self, reporter, action, **kwargs):
+        # The mediator needs to know from who sent the
         self.__reporter = reporter
         self.__action = action
         self.__kwargs = kwargs
@@ -31,7 +37,7 @@ class FwEvent(object):
     @property
     def kwargs(self):
         return self.__kwargs
-    
+   
 class FwEventFactory(object):
     """Factory for an FwEvent"""
     def __new__(cls, reporter, action, **kwargs):
@@ -150,8 +156,7 @@ class FwMediatedList(MutableSequence, FwColleague):
 
     def __setitem__(self, index, value):
         self._data[index] = value
-        event = FwEventFactory(self, "Change", data=self.data)
-        self.report(self._eventgroup + "Change", index=index, value=value)
+        event = FwEventFactory(self, "Change", index=index, value=value)
         self.report(event)
 
     def __delitem__(self, index):

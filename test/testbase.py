@@ -9,54 +9,73 @@ from fwviz.base import FwColleague, FwMediator, FwMediatedList, FwEventFactory
 
 class TColleague(FwColleague):
 
-    def __init__(self, mediator=None):
-        super(TColleague, self).__init__(mediator)
+    def __init__(self, mediator=None, eventgroup="TestEvents"):
+        super(TColleague, self).__init__(mediator, eventgroup)
         self.myevent = 0
 
     def onEvent(self, event, *args, **kwargs):
         self.myevent = self.myevent + 1
         print "I received event #{0}: {1}.".format(self.myevent, event)
-
-
-
+        
+        
 class TestMediator:
     """test the mediator class"""
+    def testEvent(self):
+        reporter = None
+        action = "Add"
+        kwargs = {'foo': 'bar', 'baz': 'bla'}
+        E = FwEventFactory(reporter, action, **kwargs)
+        assert E.reporter == reporter
+        assert E.action == action
+        assert E.kwargs == kwargs
 
     def testMediator(self):
         M = FwMediator()
-        C1 = TColleague(M, "my")
-        C2 = TColleague(M, "my")
+        
+        eventgroup = "testEvents"
+        C1 = TColleague(M, eventgroup)
+        C2 = TColleague(M, eventgroup)
+        assert C1.mediator == M and C2.mediator == M
+        
+        M.register(C1, eventgroup, "Add", "Change", "Del")
+        M.register(C2, eventgroup, "Add", "Del")
+        
+        E1 = FwEventFactory(C1, "Add")
+        E2 = FwEventFactory(C1, "Change") 
+        assert E1.eventgroup == eventgroup and E2.eventgroup == eventgroup
 
-        M.register(C1, "my", "Event")
-        M.register(C2, "my", "Event")
-
-        E = FwEventFactory(C1, )
-        C1.report("my", "Event")
-        assert C2.myevent == 1
-        assert C1.myevent == 0
-
-        # C1.report("unregisteredEvent")
-        C2.report("my", "Event")
-        assert C2.myevent == 1
-        assert C1.myevent == 1
-
-        M.unregister(C2, "my", "Event")
-        C1.report("my", "Event")
-        assert C2.myevent == 1
-        assert C1.myevent == 1
+        C1.report(E1)
+        assert C2.myevent == 1 and C1.myevent == 0
+        
+        # C2 isn't registred for "Change" actions
+        C1.report(E2)
+        assert C2.myevent == 1 and C1.myevent == 0
+       
+        # register another event 
+        M.register(C2, eventgroup, "Change")
+        C1.report(E2)
+        assert C2.myevent == 2 and C1.myevent == 0
+        
+        # unregister from all events
+        M.unregister(C2, eventgroup, "Add", "Change")
+        C1.report(E1)
+        C1.report(E2)
+        assert C2.myevent == 2 and C1.myevent == 0
+        
 
 class TestMediatedList:
 
     def testMediatedList(self):
         M = FwMediator()
-        C = TColleague(M)
+        C = TColleague(M, "tlist")
+        
         M.register(C, "tlist", "Change", "Add", "Del")
 
         initlist = ["foo", "bar"]
 
         # initialisation
         ops = 1
-        L = FwMediatedList(M, initlist, "tlist")
+        L = FwMediatedList(M, "tlist", initlist)
         for x in initlist:
             assert x in L
         assert C.myevent == ops
