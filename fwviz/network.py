@@ -6,7 +6,7 @@ Created on May 23, 2012
 
 import IPy
 # import pprint
-from fwviz.base import ObsSubject
+from fwviz.base import FwColleague
 
 class Network(object):
     """Network"""
@@ -18,7 +18,7 @@ class Network(object):
         """Called by observer subjects."""
         raise NotImplementedError("You must define an update method.")
 
-class NIC(ObsSubject):
+class NIC(FwColleague):
     """Implements a network interface"""
 
     def __init__(self, name, address=None, state="down"):
@@ -86,7 +86,8 @@ class Route(object):
         return self != other and self <= other
 
     def __repr__(self):
-        return "{0} {1} {2} {3}".format(self.network, self.gateway, self.nic, self.metric)
+        return "{0} {1} {2} {3}".format(self.network, self.gateway, self.nic,
+                                        self.metric)
 
 
 class RoutingTable(object):

@@ -40,17 +40,24 @@ class IptablesNetwork(Network):
     """Network for an iptables firewall"""
 
     __events = {
-               "nic": ["addressChange", "addressDel", "addressAdd" ],
-               "routingtable": ["ifState",
-                                "addressChange", "addressDel", "addressAdd" ]
+               "nic": { 
+                        "address": ["Change", "Del", "Add" ] 
+                       },
+               "routingtable": { 
+                        "nic": ["Up", "Down"],
+                        "address": [ "Change", "Del", "Add" ]
+                },
     }
 
     def __init__(self):
         super(IptablesNetwork, self).__init__()
         self._plumbing = IptablesPlumbing()
-        self._routingtable = RoutingTable(monitor=self)
-        for event in self.__events['routingtable']:
-            self.register(self._routingtable, event)
+        self._routingtable = RoutingTable(mediator=self)
+        
+        # register 
+        for eventgroup in self.__events['routingtable']:
+            actions = self.__events["routingtable"][eventgroup]
+            self.register(self._routingtable, eventgroup, *actions)
 
     def addNIC(self, nicname):
         """add a nic"""

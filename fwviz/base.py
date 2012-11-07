@@ -5,6 +5,7 @@ Created on May 30, 2012
 """
 
 from collections import MutableSequence
+import uuid
 
 class FwEvent(object):
     """Event class, passed between colleagues via their common
@@ -20,7 +21,7 @@ class FwEvent(object):
         self.__kwargs = kwargs
         
     def __str__(self):
-        return self.__reporter.eventgroup + self.__action
+        return self.__reporter.eventgroup + ":" + self.__action
         
     @property
     def reporter(self):
@@ -52,11 +53,11 @@ class FwMediator(object):
 
     def register(self, colleague, eventgroup, *actions):
         """register a reporter/colleague"""
-        if eventgroup not in self._colleagues:
+        if not self._colleagues.has_key(eventgroup):
             self._colleagues[eventgroup] = {}
             
         for a in actions:
-            if a not in self._colleagues[eventgroup]:
+            if not self._colleagues[eventgroup].has_key(a):
                 self._colleagues[eventgroup][a] = []
             self._colleagues[eventgroup][a].append(colleague)
         
@@ -72,7 +73,7 @@ class FwMediator(object):
         """notify reporters/colleagues of a change"""
         try:
             for c in self._colleagues[event.eventgroup][event.action]:
-                if c == event.reporter:
+                if c.uuid == event.reporter.uuid:
                     continue
                 c.onEvent(event)
         except KeyError:
@@ -83,6 +84,7 @@ class FwColleague(object):
     def __init__(self, mediator=None, eventgroup="colleague"):
         """Constructor"""
         super(FwColleague, self).__init__()
+        self.uuid = uuid.uuid4()  # colleague identifiert
         self.__mediator = mediator
         self.__eventgroup = eventgroup
 

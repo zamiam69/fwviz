@@ -49,8 +49,13 @@ class Network(FwMediator):
 
     @property
     def routes(self):
-        """getter for the routingtable"""
+        """getter for the routingtable's routes"""
         return self._routingtable.routes
+    
+    @property
+    def routingtable(self):
+        """getter for the routingtable"""
+        return self._routingtable
 
     @abstractmethod
     def addNIC(self, name):
@@ -157,7 +162,7 @@ class NICAddressList(FwMediatedList):
         na = setAddr(addr)
         super(NICAddressList, self).insert(index, na)
 
-    def onEvent(self, event, *args, **kwargs):
+    def onEvent(self, event):
         """I only report"""
         print "Event received."
 
@@ -185,6 +190,10 @@ class NICAddress(object):
     def netmask(self):
         """network getter"""
         return self.__netmask
+    
+    @property
+    def network(self):
+        return self.__address.make_net(self.__netmask)
 
 class Route(object):
     """Implements an IP routing table entry"""
@@ -193,9 +202,12 @@ class Route(object):
         """Constructor"""
         self.network = IPy.IP(network)
         self.nic = nic
-        self.gateway = IPy.IP(gateway)
         self.metric = metric
-
+        if gateway:
+            self.gateway = IPy.IP(gateway)
+        else:
+            self.gateway = ""
+            
     def __eq__(self, other):
         return self.network == other.network and self.metric == other.metric \
             and self.nic == other.nic and self.gateway == other.gateway
@@ -221,6 +233,7 @@ class RoutingTable(FwMediatedList):
 
     def __init__(self, *args, **kwargs):
         super(RoutingTable, self).__init__(args, kwargs)
+        self.events = 0
 
     def __setitem__(self, index, value):
         super(RoutingTable, self).__setitem__(index, value)
@@ -253,13 +266,39 @@ class RoutingTable(FwMediatedList):
             if address in r.network:
                 return r
 
-    def onEvent(self, event, *args, **kwargs):
+    def onEvent(self, event):
         """Receive events"""
-        if event == "addressAdd":
-            print event, ": ", args
-        elif event == "addressChange":
-            print args
-        elif event == "addressDel":
-            print args
+        self.events +=1
+        reporter = event.reporter
+        eventgroup = event.eventgroup
+        action = event.action
+        kwargs = event.kwargs
+        
+        if eventgroup == "address":
+            nic = reporter.nic
+            if kwargs.has_key("value"):
+                addrs = [ kwargs["value"] ]
+            elif kwargs.has_key("values"):
+                addrs = kwargs["values"]
+            if action == "Add":
+                for a in addrs:
+                    r = self.lookup(a)
+                    if r is not None:
+                        continue
+                    network = a[0].make_net(a[1])
+                    route = Route(network, nic, "")
+                    print ":", route
+                    if nic.state == "down":
+                        continue
+                    
+            elif action == "Change":
+                print kwargs
+            elif action == "Del":
+                print kwargs
+        elif event == "nic":
+            if action == "Up":
+                pass
+            elif action == "Down":
+                pass
         else:
-            print event, "unhandled"
+            print "Unhandled event: {0}".format(event)
