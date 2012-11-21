@@ -4,7 +4,7 @@ Created on May 30, 2012
 @author: maz
 """
 
-from collections import MutableSequence
+import collections
 import uuid
 
 class FwEvent(object):
@@ -115,13 +115,13 @@ class FwColleague(object):
         else:
             pass
 
-class FwMediatedList(MutableSequence, FwColleague):
+class FwMediatedList(collections.MutableSequence, FwColleague):
     """A list that reports changes to a mediator"""
 
     def __init__(self, mediator, eventgroup="list", data=None):
         """Constructor"""
         FwColleague.__init__(self, mediator, eventgroup)
-        self._data = []
+        # self._data = []
         if data is not None:
             if type(data) == type(self._data):
                 # shallow copy!
@@ -142,13 +142,19 @@ class FwMediatedList(MutableSequence, FwColleague):
         return str(self._data)
 
     def __repr__(self):
-        return self._data
+        if not self:
+            return '%s()' % (self.__class__.__name__,)
+        return '%s(%r)' % (self.__class__.__name__, list(self))
+        # return self._data
 
     def __eq__(self, other):
         if isinstance(other, FwMediatedList):
             return self._data == other.data
         else:
             return self._data == other
+        
+    def __contains__(self, value):
+        return value in self._data
 
     def __getitem__(self, index):
         return self._data[index]

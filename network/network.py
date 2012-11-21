@@ -135,31 +135,31 @@ class NICAddressList(FwMediatedList):
 
     # override destructive methods
     def __setitem__(self, index, addr):
-        na = setAddr(addr)
+        na = NICAddress(addr)
         super(NICAddressList, self).__setitem__(index, na)
 
     def __iadd__(self, addrs):
         nas = []
         for addr in addrs:
-            nas.append(setAddr(addr))
+            nas.append(NICAddress(addr))
         super(NICAddressList, self).__iadd__(nas)
 
     def append(self, addr):
-        na = setAddr(addr)
+        na = NICAddress(addr)
         super(NICAddressList, self).append(na)
 
     def extend(self, addrs):
         nas = []
         for addr in addrs:
-            nas.append(setAddr(addr))
+            nas.append(NICAddress(addr))
         super(NICAddressList, self).extend(nas)
 
     def remove(self, addr):
-        na = setAddr(addr)
+        na = NICAddress(addr)
         super(NICAddressList, self).remove(na)
 
     def insert(self, index, addr):
-        na = setAddr(addr)
+        na = NICAddress(addr)
         super(NICAddressList, self).insert(index, na)
 
     def onEvent(self, event):
@@ -169,11 +169,18 @@ class NICAddressList(FwMediatedList):
 class NICAddress(object):
     """IP address object"""
     def __init__(self, address):
-        # super(NICAddress, self).__init__(address, network)
-        self.__address, self.__netmask = setAddr(address)
+        # super(NICAddreself.__addressss, self).__init__(address, network)
+        if isinstance(address, NICAddress):
+            self.__address = address.address
+            self.__netmask = address.netmask
+        else:
+            self.__address, self.__netmask = setAddr(address)
 
-    def __repr__(self):
+    def __str__(self):
         """String representation"""
+        return "{0}/{1}".format(self.__address, self.__netmask)
+        
+    def __repr__(self):
         return "{0}/{1}".format(self.__address, self.__netmask)
 
     @property
@@ -283,13 +290,14 @@ class RoutingTable(FwMediatedList):
             if action == "Add":
                 for a in addrs:
                     r = self.lookup(a)
+                    print a, type(a)
                     if r is not None:
                         continue
-                    network = a[0].make_net(a[1])
-                    route = Route(network, nic, "")
-                    print ":", route
-                    if nic.state == "down":
-                        continue
+                    #network = a[0].make_net(a[1])
+                    #route = Route(network, nic, "")
+                    #print ":", route
+                    #if nic.state == "down":
+                    #    continue
                     
             elif action == "Change":
                 print kwargs

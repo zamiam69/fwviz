@@ -40,6 +40,24 @@ def failIllegalAddr(*args):
     """create an interface with and illegal address"""
     return not NIC(args)
 
+def checkRouteLookup(routingtable, address, gateway, nic):
+    r = routingtable.lookup(IPy.IP(address))
+    assert r.gateway == IPy.IP(gateway) and r.nic == nic
+
+def checkNICAddress(addr, checkaddr, checknetmask, checknetwork):
+        naddr = NICAddress(addr)
+        assert naddr.address == IPy.IP(checkaddr) and \
+            naddr.netmask == IPy.IP(checknetmask) and \
+            naddr.network == IPy.IP(checknetwork)
+            
+def checkRoute(network, nic, gateway):
+    r = Route(network, nic, gateway)
+    assert IPy.IP(network) == r.network and \
+                IPy.IP(gateway) == r.gateway
+                
+def checkContains(alist, obj):
+    assert obj in alist
+
 class TestNIC:
     """Unit tests for the NIC class"""
 
@@ -100,25 +118,31 @@ class TestNIC:
 
     def testNICAddress(self):
         """test the NICAddress class"""
-        naddr = NICAddress("127.0.0.1/8")
-        assert naddr.address == IPy.IP("127.0.0.1")
-        assert naddr.netmask == IPy.IP("255.0.0.0")
-
+        checkdata = [
+                     ["217.10.66.66/32", "217.10.66.66", "255.255.255.255", "217.10.66.66/32"],
+                     ["127.0.0.1/8", "127.0.0.1", "255.0.0.0", "127.0.0.0/8"],
+                     ["192.168.10.3/23", "192.168.10.3", "255.255.254.0", "192.168.10.0/23"],
+                     ["217.10.64.172/20", "217.10.64.172", "255.255.240.0", "217.10.64.0/20"],
+                     ]
+        
+        for addr, checkaddr, checknetmask, checknetwork in checkdata:
+            yield(checkNICAddress, addr, checkaddr, checknetmask, checknetwork)
 
     def testNICAddressList(self):
         """test NICAddressList"""
         nic = NIC("eth0:1")
-        print nic.addresses
+        # print nic.addresses
         assert nic.addresses == []
 
-        addresses = map(NICAddress, legal_addr_v4)
+        addresses = [ NICAddress(a) for a in legal_addr_v4 ]
         nic.addresses.extend(addresses)
         assert len(nic.addresses) == len(legal_addr_v4)
-
+        
         for naddr in addresses:
-            nic.addresses.remove(naddr)
+            yield(checkContains, nic.addresses, naddr)
+            # nic.addresses.remove(naddr)
 
-        assert len(nic.addresses) == 0 and nic.addresses == []
+        #assert len(nic.addresses) == 0 and nic.addresses == []
 
 class TestRoute:
     """Unit tests for the Route class"""
@@ -126,10 +150,8 @@ class TestRoute:
     def testRoute(self):
         "Route: test the constructor"
         for route in legal_routes_v4:
-            r = Route(route[0], "test0", route[1])
-            assert IPy.IP(route[0]) == r.network and \
-                IPy.IP(route[1]) == r.gateway
-
+            yield(checkRoute, route[0], "test0", route[1])
+  
 class TestRoutingTable:
     """Unit tests for the RoutingTable class"""
 
@@ -147,18 +169,14 @@ class TestRoutingTable:
         for d in routedata:
             r = Route(d[0], d[2], d[1])
             rt.append(r)
-
-        r = rt.lookup(IPy.IP("1.2.3.4"))
-        assert r.gateway == IPy.IP("192.168.10.1") and r.nic == "eth0"
-
-        r = rt.lookup(IPy.IP("192.168.10.13"))
-        assert r.gateway == IPy.IP("192.168.10.1") and r.nic == "eth0"
-
-        r = rt.lookup(IPy.IP("192.168.11.117"))
-        assert r.gateway == IPy.IP("192.168.11.1") and r.nic == "eth1"
-
-        r = rt.lookup(IPy.IP("127.1.1.1"))
-        assert r.gateway == IPy.IP("127.0.0.1") and r.nic == "lo"
-
-        r = rt.lookup(IPy.IP("10.1.2.0"))
-        assert r.gateway == IPy.IP("10.0.0.1") and r.nic == "eth1"
+            
+        checkdata = [
+                     ["1.2.3.4", "192.168.10.1", "eth0"],
+                     ["192.168.10.13", "192.168.10.1", "eth0"],
+                     ["192.168.11.117", "192.168.11.1", "eth1"],
+                     ["127.1.1.1", "127.0.0.1", "lo"],
+                     ["10.1.2.0", "10.0.0.1", "eth1"]
+                     ]
+        
+        for addr, gw, nic in checkdata:
+            yield(checkRouteLookup, rt, addr, gw, nic)
